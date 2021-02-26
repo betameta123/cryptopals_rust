@@ -1,4 +1,7 @@
 use std::collections::HashMap;
+use std::io::prelude::*;
+use std::io::BufReader;
+use std::fs::File;
 
 extern crate hex;
 fn is_alphabetic(s: &String) -> bool {
@@ -10,14 +13,13 @@ fn is_alphabetic(s: &String) -> bool {
     true
 }
 fn decode(ciphertext: Vec<u8>) -> Vec<String> {
-    let mut plain = String::new();
     let mut text: Vec<String> = Vec::new();
-    for i in 32..127 {
-        plain = "".to_string();
-       for c in ciphertext.iter() {
+    for i in 0..255 {
+        let mut plain = String::new();
+        for c in ciphertext.iter() {
             plain.push((i^c) as char)        
-       } 
-    text.push(plain);
+        } 
+        text.push(plain);
     }
     return text;
 }
@@ -56,15 +58,14 @@ fn checker(plains: Vec<String>) -> Vec<(String)>{
         .into_iter()
         .filter(|x| is_alphabetic(x)) 
         .collect();
-    
    for s in texts.iter() {
-        let s = s.to_lowercase();
+        let o = s.to_lowercase();
         let mut frq_diff = 0f32;
         for c in LETTER_FREQUENCY.keys() {
-            let num = s.matches(c).count() as f32;
-            frq_diff += (num/s.len() as f32) - LETTER_FREQUENCY[c];
+            let num = o.matches(c).count() as f32;
+            frq_diff += (num/o.len() as f32) - LETTER_FREQUENCY[c];
         }
-        ans.insert(s, frq_diff);
+        ans.insert(s.to_string(), frq_diff);
    }
     let mut texts: Vec<(&String,&f32)> = ans.iter().collect();
     texts.sort_by(|a,b| a.1.partial_cmp(b.1).unwrap());
@@ -75,17 +76,29 @@ fn checker(plains: Vec<String>) -> Vec<(String)>{
     return plain;
 }
 fn main() {
-    let ciphertext = match hex::decode("1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736") {
-        Ok(c) =>c,
-        Err(e) => panic!("Error: {}",e)
-    };
-    let plains = decode(ciphertext);
-
-    // for s in plains.iter() {
-    //     println!("{}",s)
-    // }
-    let plaintext = checker(plains);
-    for i in plaintext {
-        println!("{}",i);
+    // let ciphertext = match hex::decode("1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736") { //For challenge 3
+    //     Ok(c) =>c,
+    //     Err(e) => panic!("Error: {}",e)
+    // };
+    
+    let f = File::open("4.txt").unwrap();
+    let f = BufReader::new(f);
+    for line in f.lines() {
+        let ciphertext = match hex::decode(line.unwrap()) { //For challenge 3
+            Ok(c) =>c,
+            Err(e) => panic!("Error: {}",e)
+        };
+        let plains = decode(ciphertext);
+        let plaintext = checker(plains);
+        for i in plaintext {
+            println!("{}",i);
+        }
     }
+
+    // let plains = decode(ciphertext);
+    // 
+    // let plaintext = checker(plains);
+    // for i in plaintext {
+    //     println!("{}",i);
+    // }
 }
